@@ -1,0 +1,3 @@
+[submodule "ThirdParties/poco"]
+	path = ThirdParties/poco
+	url = https://github.com/pocoproject/poco.git
