@@ -1,6 +1,6 @@
 [submodule "ThirdParties/poco"]
-	path = ThirdParties/poco
+	path = ThirdParties/src/poco
 	url = https://github.com/pocoproject/poco.git
 [submodule "ThirdParties/mongo-c-driver"]
-	path = ThirdParties/mongo-c-driver
+	path = ThirdParties/src/mongo-c-driver
 	url = https://github.com/mongodb/mongo-c-driver.git
