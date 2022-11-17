@@ -4,9 +4,8 @@ project(Tests VERSION 1.0)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_subdirectory(ThirdParties/poco)
-add_subdirectory(ThirdParties/mongo-c-driver)
-add_subdirectory(ThirdParties)
+find_package(Poco REQUIRED Foundation)
+find_package (mongoc-1.0 REQUIRED)
 
 add_executable(tests src/tests.cpp src/uuid.cpp src/mongo_hello.cpp)
 target_link_libraries(tests PUBLIC Poco::Foundation mongo::mongoc_shared)
