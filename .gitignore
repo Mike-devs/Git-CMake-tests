@@ -1,6 +1,7 @@
 #CMake build directory
 cmake-build/
-ThirdParties/
+ThirdParties/build
+ThirdParties/install
 
 # Prerequisites
 *.d
