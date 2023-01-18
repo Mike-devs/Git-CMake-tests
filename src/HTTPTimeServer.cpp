@@ -25,6 +25,7 @@ using Poco::Net::HTTPServer;
 using Poco::Net::HTTPServerRequest;
 using Poco::Net::HTTPServerResponse;
 using Poco::Net::HTTPServerParams;
+using Poco::Net::NameValueCollection;
 using Poco::Timestamp;
 using Poco::DateTimeFormatter;
 using Poco::DateTimeFormat;
@@ -79,6 +80,23 @@ public:
 
 	HTTPRequestHandler* createRequestHandler(const HTTPServerRequest& request)
 	{
+		Application& app = Application::instance();
+
+		Poco::Thread::TID threadId = Poco::Thread::currentTid();
+		//app.logger().information("Poco thread id: " + std::string(threadId));
+
+		for (NameValueCollection::ConstIterator& iter = request.begin(); iter != request.end(); iter++)
+		{
+			app.logger().information(iter->first + " / " + iter->second);
+		}
+
+		if (request.hasCredentials())
+		{
+			std::string scheme, authInfo;
+			request.getCredentials(scheme, authInfo);
+			app.logger().information("Credentials: " + scheme + " / " + authInfo);
+		}
+
 		if (request.getURI() == "/")
 			return new TimeRequestHandler(_format);
 		else
