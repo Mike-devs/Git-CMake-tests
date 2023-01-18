@@ -85,7 +85,7 @@ public:
 		Poco::Thread::TID threadId = Poco::Thread::currentTid();
 		//app.logger().information("Poco thread id: " + std::string(threadId));
 
-		for (NameValueCollection::ConstIterator& iter = request.begin(); iter != request.end(); iter++)
+		for (NameValueCollection::ConstIterator&& iter = request.begin(); iter != request.end(); iter++)
 		{
 			app.logger().information(iter->first + " / " + iter->second);
 		}
