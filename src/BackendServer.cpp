@@ -6,8 +6,7 @@
 #include "Poco/Net/HTTPServerResponse.h"
 #include "Poco/Net/HTTPServerParams.h"
 #include "Poco/Net/ServerSocket.h"
-#include "Poco/Timestamp.h"
-#include "Poco/DateTimeFormatter.h"
+#include "Poco/Net/NetException.h"
 #include "Poco/DateTimeFormat.h"
 #include "Poco/Exception.h"
 #include "Poco/ThreadPool.h"
@@ -15,8 +14,13 @@
 #include "Poco/Util/Option.h"
 #include "Poco/Util/OptionSet.h"
 #include "Poco/Util/HelpFormatter.h"
+#include "Poco/MongoDB/Connection.h"
+
 #include <iostream>
 
+#include "TimeRequestHandler.h"
+#include "RegisterRequestHandler.h"
+#include "LoginRequestHandler.h"
 
 using Poco::Net::ServerSocket;
 using Poco::Net::HTTPRequestHandler;
@@ -26,8 +30,6 @@ using Poco::Net::HTTPServerRequest;
 using Poco::Net::HTTPServerResponse;
 using Poco::Net::HTTPServerParams;
 using Poco::Net::NameValueCollection;
-using Poco::Timestamp;
-using Poco::DateTimeFormatter;
 using Poco::DateTimeFormat;
 using Poco::ThreadPool;
 using Poco::Util::ServerApplication;
@@ -35,47 +37,23 @@ using Poco::Util::Application;
 using Poco::Util::Option;
 using Poco::Util::OptionSet;
 using Poco::Util::HelpFormatter;
+using Poco::MongoDB::Connection;
 
-
-class TimeRequestHandler: public HTTPRequestHandler
-	/// Return a HTML document with the current date and time.
+class BackendHandlerFactory: public HTTPRequestHandlerFactory
 {
 public:
-	TimeRequestHandler(const std::string& format):
-		_format(format)
+	BackendHandlerFactory(const std::string& format):
+	_format(format)
 	{
-	}
-
-	void handleRequest(HTTPServerRequest& request, HTTPServerResponse& response)
-	{
-		Application& app = Application::instance();
-		app.logger().information("Request from " + request.clientAddress().toString());
-
-		Timestamp now;
-		std::string dt(DateTimeFormatter::format(now, _format));
-
-		response.setChunkedTransferEncoding(true);
-		response.setContentType("text/html");
-
-		std::ostream& ostr = response.send();
-		ostr << "<html><head><title>HTTPTimeServer powered by POCO C++ Libraries</title>";
-		ostr << "<meta http-equiv=\"refresh\" content=\"1\"></head>";
-		ostr << "<body><p style=\"text-align: center; font-size: 48px;\">";
-		ostr << dt;
-		ostr << "</p></body></html>";
-	}
-
-private:
-	std::string _format;
-};
-
-
-class TimeRequestHandlerFactory: public HTTPRequestHandlerFactory
-{
-public:
-	TimeRequestHandlerFactory(const std::string& format):
-		_format(format)
-	{
+		try
+		{
+			fConnection = new Connection("127.0.0.1", 27017);
+			std::cout << "Connected to MongoDB 127.0.0.1:27017" << std::endl;
+		}
+		catch (Poco::Net::ConnectionRefusedException& e)
+		{
+			std::cout << "Couldn't connect to MongoDB 127.0.0.1:27017: " << e.message() << std::endl;
+		}
 	}
 
 	HTTPRequestHandler* createRequestHandler(const HTTPServerRequest& request)
@@ -99,16 +77,21 @@ public:
 
 		if (request.getURI() == "/")
 			return new TimeRequestHandler(_format);
+		else if (request.getURI().starts_with("/register"))
+			return new RegisterRequestHandler(fConnection);
+		else if (request.getURI().starts_with("/login"))
+			return new LoginRequestHandler(fConnection);
 		else
 			return 0;
 	}
 
 private:
 	std::string _format;
+	Poco::SharedPtr<Poco::MongoDB::Connection> fConnection;
 };
 
 
-class HTTPTimeServer: public Poco::Util::ServerApplication
+class BackendServer: public Poco::Util::ServerApplication
 	/// The main application class.
 	///
 	/// This class handles command-line arguments and
@@ -128,11 +111,11 @@ class HTTPTimeServer: public Poco::Util::ServerApplication
 	/// To test the TimeServer you can use any web browser (http://localhost:9980/).
 {
 public:
-	HTTPTimeServer()
+	BackendServer()
 	{
 	}
 
-	~HTTPTimeServer()
+	~BackendServer()
 	{
 	}
 
@@ -170,11 +153,13 @@ protected:
 		HTTPServerParams* pParams = new HTTPServerParams;
 		pParams->setMaxQueued(maxQueued);
 		pParams->setMaxThreads(maxThreads);
+		Poco::Timespan timeout(5, 0);
+		pParams->setTimeout(timeout);
 
 		// set-up a server socket
 		ServerSocket svs(port);
 		// set-up a HTTPServer instance
-		HTTPServer srv(new TimeRequestHandlerFactory(format), svs, pParams);
+		HTTPServer srv(new BackendHandlerFactory(format), svs, pParams);
 		// start the HTTPServer
 		srv.start();
 		// wait for CTRL-C or kill
@@ -189,6 +174,6 @@ protected:
 
 void LaunchTimeServer(int argc, char** argv)
 {
-	HTTPTimeServer app;
+	BackendServer app;
 	app.run(argc, argv);
 }
