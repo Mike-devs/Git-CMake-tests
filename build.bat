@@ -6,7 +6,7 @@ if [%~1]==[] (
     set root_install_folder=%~1
 )
 
-set PATH=%PATH%;C:\Program Files\CMake\bin;C:\Program Files\Conan\conan
+set PATH=%PATH%;C:\Program Files\CMake\bin;%APPDATA%\Python\Python311\Scripts
 if [%CONAN_USER_HOME%]==[] (
     set CONAN_USER_HOME=%root_install_folder%\ThirdParties\install\dependencies
 )
