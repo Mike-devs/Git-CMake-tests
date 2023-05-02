@@ -7,33 +7,49 @@
 #include "Poco/Util/Application.h"
 #include "Poco/Timestamp.h"
 #include "Poco/DateTimeFormatter.h"
+#include "Poco/JSON/Object.h"
+
+#include "BackendServer.h"
 
 using Poco::Util::Application;
+using Poco::Net::HTTPRequest;
+using Poco::Net::HTTPResponse;
 using Poco::Net::HTTPServerRequest;
 using Poco::Net::HTTPServerResponse;
 using Poco::Timestamp;
 using Poco::DateTimeFormatter;
+using Poco::JSON::Object;
 
 TimeRequestHandler::TimeRequestHandler(const std::string& format) :
-_format(format)
+	_format(format)
+{
+}
+
+TimeRequestHandler::~TimeRequestHandler()
 {
 }
 
 void TimeRequestHandler::handleRequest(HTTPServerRequest& request, HTTPServerResponse& response)
 {
-	Application& app = Application::instance();
-	app.logger().information("Request from " + request.clientAddress().toString());
-
+	//app.logger().information("Request from " + request.clientAddress().toString());
+	BackendServer& backend = dynamic_cast<BackendServer&>(Application::instance());
 	Timestamp now;
-	std::string dt(DateTimeFormatter::format(now, _format));
 
-	response.setChunkedTransferEncoding(true);
-	response.setContentType("text/html");
+	if (request.getMethod() != HTTPRequest::HTTP_GET)
+	{
+		response.setStatusAndReason(HTTPResponse::HTTP_METHOD_NOT_ALLOWED);
+		response.send();
+	}
+	else
+	{
+		Object::Ptr object = new Object();
 
-	std::ostream& ostr = response.send();
-	ostr << "<html><head><title>HTTPTimeServer powered by POCO C++ Libraries</title>";
-	ostr << "<meta http-equiv=\"refresh\" content=\"1\"></head>";
-	ostr << "<body><p style=\"text-align: center; font-size: 48px;\">";
-	ostr << dt;
-	ostr << "</p></body></html>";
+		response.setChunkedTransferEncoding(true);
+		response.setContentType("application/json");
+
+		object->set("time", DateTimeFormatter::format(now, _format));
+		object->stringify(response.send());
+	}
+
+	backend.fStats.Update(now.elapsed() / 1000);
 }

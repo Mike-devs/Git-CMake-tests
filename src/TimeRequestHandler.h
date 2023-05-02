@@ -2,14 +2,20 @@
 
 #include "Poco/Net/HTTPRequestHandler.h"
 
-class Poco::Net::HTTPServerRequest;
-class Poco::Net::HTTPServerResponse;
+namespace Poco
+{
+	namespace Net {
+		class HTTPServerRequest;
+		class HTTPServerResponse;
+	}
+}
 
+/// Return a HTML document with the current date and time.
 class TimeRequestHandler : public Poco::Net::HTTPRequestHandler
-	/// Return a HTML document with the current date and time.
 {
 public:
 	TimeRequestHandler(const std::string& format);
+	~TimeRequestHandler();
 
 	void handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::HTTPServerResponse& response);
 

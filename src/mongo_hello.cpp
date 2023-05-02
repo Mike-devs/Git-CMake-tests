@@ -2,7 +2,7 @@
 
 void mongo_hello (int argc, char *argv[])
 {
-   const char *uri_string = "mongodb://localhost:27017";
+   const char *uri_string = "mongodb://localhost:27018";
    mongoc_uri_t *uri;
    mongoc_client_t *client;
    mongoc_database_t *database;

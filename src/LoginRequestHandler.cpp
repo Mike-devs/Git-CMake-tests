@@ -1,6 +1,7 @@
 #include "LoginRequestHandler.h"
 
 #include "Poco/Util/Application.h"
+#include "Poco/Timestamp.h"
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/Net/HTTPServerResponse.h"
 #include "Poco/Net/NetException.h"
@@ -10,31 +11,38 @@
 #include "Poco/JSON/Object.h"
 #include "Poco/Dynamic/Var.h"
 
+#include "BackendServer.h"
+
 using Poco::Util::Application;
+using Poco::Timestamp;
 using Poco::Net::HTTPRequest;
+using Poco::Net::HTTPResponse;
 using Poco::Net::HTTPServerRequest;
 using Poco::Net::HTTPServerResponse;
 using Poco::Net::NetException;
 using Poco::MongoDB::Connection;
+using Poco::MongoDB::QueryRequest;
+using Poco::MongoDB::ResponseMessage;
+using Poco::MongoDB::Document;
 using Poco::JSON::Parser;
 using Poco::JSON::Object;
 using Poco::Dynamic::Var;
 
-LoginRequestHandler::LoginRequestHandler(Poco::SharedPtr<Poco::MongoDB::Connection> connection)
+LoginRequestHandler::LoginRequestHandler(void)
 {
-	fConnection = connection;
 }
 
 void LoginRequestHandler::handleRequest(HTTPServerRequest& request, HTTPServerResponse& response)
 {
-	Application& app = Application::instance();
-	app.logger().information("Request from " + request.clientAddress().toString());
-
-	response.setChunkedTransferEncoding(true);
-	response.setContentType("application/json");
+	//app.logger().information("Request from " + request.clientAddress().toString());
+	BackendServer& backend = dynamic_cast<BackendServer&>(Application::instance());
+	Timestamp now;
 
 	if (request.getMethod() != HTTPRequest::HTTP_POST)
-		response.setStatusAndReason(Poco::Net::HTTPResponse::HTTP_METHOD_NOT_ALLOWED);
+	{
+		response.setStatusAndReason(HTTPResponse::HTTP_METHOD_NOT_ALLOWED);
+		response.send();
+	}
 	else
 	{
 		std::streamsize length = request.getContentLength();
@@ -48,19 +56,30 @@ void LoginRequestHandler::handleRequest(HTTPServerRequest& request, HTTPServerRe
 		Object::Ptr pObject = result.extract<Object::Ptr>();
 		std::string user_id = pObject->getValue<std::string>("user_id");
 
-		Poco::MongoDB::QueryRequest dbRequest("altwy.users");
+		QueryRequest dbRequest("altwy.users");
 		dbRequest.selector().add("user_id", user_id);
 		dbRequest.setNumberToReturn(1);
 
-		std::ostream& ostr = response.send();
-		Poco::MongoDB::ResponseMessage dbResponse;
-		fConnection->sendRequest(dbRequest, dbResponse);
+		ResponseMessage dbResponse;
+		backend.fConnection->sendRequest(dbRequest, dbResponse);
 		if (dbResponse.documents().size() > 0)
 		{
-			Poco::MongoDB::Document::Ptr doc = dbResponse.documents()[0];
-			ostr << "{\"lastname\":" << doc->get<std::string>("lastname") << "," << "\"firstname\":" << doc->get<std::string>("firstname") << "}";
+			Object object;
+
+			Document::Ptr doc = dbResponse.documents()[0];
+			object.set("lastname", doc->get<std::string>("lastname"));
+			object.set("firstname", doc->get<std::string>("firstname"));
+
+			response.setChunkedTransferEncoding(true);
+			response.setContentType("application/json");
+			object.stringify(response.send());
 		}
 		else
+		{
 			response.setStatusAndReason(Poco::Net::HTTPResponse::HTTP_NOT_FOUND);
+			response.send();
+		}
 	}
+
+	backend.fStats.Update(now.elapsed() / 1000);
 }
