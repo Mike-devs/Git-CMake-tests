@@ -5,6 +5,8 @@
 #include "TimeRequestHandler.h"
 #include "RegisterRequestHandler.h"
 #include "LoginRequestHandler.h"
+#include "LogRequestHandler.h"
+#include "CpuRequestHandler.h"
 
 using Poco::Net::HTTPRequestHandler;
 using Poco::Net::HTTPServerRequest;
@@ -39,6 +41,10 @@ HTTPRequestHandler* BackendHandlerFactory::createRequestHandler(const HTTPServer
 		return new RegisterRequestHandler();
 	else if (request.getURI().starts_with("/login"))
 		return new LoginRequestHandler();
+	else if (request.getURI().starts_with("/log"))
+		return new LogRequestHandler();
+	else if (request.getURI().starts_with("/cpu"))
+		return new CpuRequestHandler();
 	else
 		return 0;
 }
