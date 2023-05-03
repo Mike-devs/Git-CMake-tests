@@ -39,7 +39,6 @@ BackendServer::BackendServer()
 
 BackendServer::~BackendServer()
 {
-	delete fConnection;
 }
 
 void BackendServer::initialize(Application& self)
