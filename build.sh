@@ -1,8 +1,18 @@
-if [[ $# -eq 0 ]] ; then
+if [[ $# -eq 2 ]] ; then
+    export root_install_folder=$2
+    export build_type=$1
+elif [[ $# -eq 1 ]] ; then
     export root_install_folder=$(pwd)
-else
-    export root_install_folder=$1
+    if [[ "$1" == "Release" ]] ; then
+        export build_type="Release"
+    else
+        export build_type="Debug"
+    fi
+elif [[ $# -eq 0 ]] ; then
+    export root_install_folder=$(pwd)
+    export build_type="Debug"
 fi
+
 
 # Build and install all the dependencies
 for folder in poco mongo-c-driver mongo-cxx-driver
@@ -19,11 +29,11 @@ do
 
     pushd "$root_install_folder/ThirdParties/build/$folder"
     cmake   "$root_install_folder/ThirdParties/src/$folder" \
-            -DCMAKE_CXX_STANDARD=17 \
+            -DCMAKE_CXX_STANDARD=20 \
             -DCMAKE_INSTALL_PREFIX="$root_install_folder/ThirdParties/install/$folder" \
-            -DCMAKE_PREFIX_PATH="$cmake_prefix_path" \
+            -DCMAKE_PREFIX_PATH="$cmake_prefix_path" -DCMAKE_BUILD_TYPE="$build_type" \
             $SPECIFIC_PROJECT_FLAG
-    cmake --build . --target install
+    cmake --build . --config $build_type --target install
     popd
 
     # Update the list of folders to retrieve CMake packages
@@ -40,6 +50,6 @@ if [ ! -d "$root_install_folder/cmake-build" ]; then
 fi
 
 pushd  "$root_install_folder/cmake-build"
-cmake .. -DCMAKE_PREFIX_PATH="$cmake_prefix_path"
-cmake --build .
+cmake .. -DCMAKE_PREFIX_PATH="$cmake_prefix_path" -DCMAKE_BUILD_TYPE="$build_type"
+cmake --build . --config $build_type
 popd
