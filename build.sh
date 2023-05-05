@@ -15,7 +15,7 @@ fi
 
 
 # Build and install all the dependencies
-for folder in poco mongo-c-driver mongo-cxx-driver
+for folder in drogon poco mongo-c-driver mongo-cxx-driver glaze
 do
     if [ ! -d "$root_install_folder/ThirdParties/build/$folder" ]; then
         mkdir -p "$root_install_folder/ThirdParties/build/$folder"
