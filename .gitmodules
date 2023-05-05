@@ -10,3 +10,6 @@
 [submodule "ThirdParties/src/drogon"]
 	path = ThirdParties/src/drogon
 	url = https://github.com/drogonframework/drogon.git
+[submodule "ThirdParties/src/glaze"]
+	path = ThirdParties/src/glaze
+	url = https://github.com/stephenberry/glaze.git
