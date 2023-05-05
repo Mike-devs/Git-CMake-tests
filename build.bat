@@ -13,7 +13,7 @@ if [%CONAN_USER_HOME%]==[] (
 set cmake_prefix_path=%CONAN_USER_HOME%
 
 REM Build and install all the dependencies
-for %%a in (drogon poco mongo-c-driver mongo-cxx-driver) do (
+for %%a in (drogon poco mongo-c-driver mongo-cxx-driver glaze) do (
     if not exist %root_install_folder%\ThirdParties\build\%%a mkdir %root_install_folder%\ThirdParties\build\%%a
     pushd %root_install_folder%\ThirdParties\build\%%a
 
