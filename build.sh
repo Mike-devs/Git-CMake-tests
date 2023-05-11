@@ -17,8 +17,8 @@ fi
 # Build and install all the dependencies
 for folder in drogon poco mongo-c-driver mongo-cxx-driver glaze
 do
-    if [ ! -d "$root_install_folder/ThirdParties/build/$folder" ]; then
-        mkdir -p "$root_install_folder/ThirdParties/build/$folder"
+    if [ ! -d "$root_install_folder/ThirdParties/build/$build_type/$folder" ]; then
+        mkdir -p "$root_install_folder/ThirdParties/build/$build_type/$folder"
     fi
 
     if [[ $folder ==  "mongo-c-driver" ]] ; then
@@ -27,10 +27,10 @@ do
         export SPECIFIC_PROJECT_FLAG=
     fi
 
-    pushd "$root_install_folder/ThirdParties/build/$folder"
+    pushd "$root_install_folder/ThirdParties/build/$build_type/$folder"
     cmake   "$root_install_folder/ThirdParties/src/$folder" \
             -DCMAKE_CXX_STANDARD=20 \
-            -DCMAKE_INSTALL_PREFIX="$root_install_folder/ThirdParties/install/$folder" \
+            -DCMAKE_INSTALL_PREFIX="$root_install_folder/ThirdParties/install/$build_type/$folder" \
             -DCMAKE_PREFIX_PATH="$cmake_prefix_path" -DCMAKE_BUILD_TYPE="$build_type" \
             $SPECIFIC_PROJECT_FLAG
     cmake --build . --config $build_type --target install
@@ -38,9 +38,9 @@ do
 
     # Update the list of folders to retrieve CMake packages
     if [[ -v cmake_prefix_path ]] ; then
-        export cmake_prefix_path="$cmake_prefix_path;$root_install_folder/ThirdParties/install/$folder"
+        export cmake_prefix_path="$cmake_prefix_path;$root_install_folder/ThirdParties/install/$build_type/$folder"
     else
-        export cmake_prefix_path="$root_install_folder/ThirdParties/install/$folder"
+        export cmake_prefix_path="$root_install_folder/ThirdParties/install/$build_type/$folder"
     fi
 done
 
