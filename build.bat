@@ -46,10 +46,9 @@ for %%a in (drogon poco mongo-c-driver mongo-cxx-driver glaze) do (
 )
 
 REM Build our project
-if not exist %root_install_folder%\cmake-build mkdir %root_install_folder%\cmake-build
+rmdir %root_install_folder%\cmake-build
+mkdir %root_install_folder%\cmake-build
 pushd  %root_install_folder%\cmake-build
-@echo on
-echo %cmake_prefix_path%
 cmake.exe .. -DCMAKE_PREFIX_PATH="%cmake_prefix_path%" -DCMAKE_BUILD_TYPE=%build_type%
 cmake.exe --build . --config %build_type%
 popd
