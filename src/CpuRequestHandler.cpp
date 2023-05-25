@@ -1,7 +1,5 @@
 #include "CpuRequestHandler.h"
 
-#include <string>
-
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/Net/HTTPServerResponse.h"
 #include "Poco/Util/Application.h"
@@ -14,6 +12,7 @@
 #include "Poco/JSON/Array.h"
 #include "Poco/Dynamic/Var.h"
 #include "Poco/Random.h"
+#include "glaze/glaze.hpp"
 
 #include "BackendServer.h"
 
@@ -69,21 +68,28 @@ void CpuRequestHandler::handleRequest(HTTPServerRequest& request, HTTPServerResp
 		Object::Ptr responseJson = new Object;
 		responseJson->set("base64", encodedStr.str());
 		responseJson->set("time", DateTimeFormatter::format(now, DateTimeFormat::HTTP_FORMAT));
+
+		std::string buffer{};
 		if(bodyJson->has("randnums"))
 		{
-			Array::Ptr	randArray = new Array;
 			Random	rng;
+			std::vector<float> randArray;
 
 			int randnums = bodyJson->getValue<int>("randnums");
 			if (randnums > 0)
 				responseJson->set("randnums", randArray);
 			else
 				randnums = -randnums;
+			randArray.reserve(randnums);
 
 			for (int scan = 0; scan < randnums; scan++)
-				randArray->add(rng.nextFloat());
+			{
+				randArray.push_back(rng.nextFloat());
+				//randArray->add(rng.nextFloat());
+			}
+			glz::write_json(randArray, buffer);
 		}
-		responseJson->stringify(response.send());
+		response.send() << buffer;
 	}
 	else
 	{
