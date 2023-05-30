@@ -28,12 +28,12 @@ BackendServer::BackendServer()
 {
 	try
 	{
-		fConnection = new Connection("127.0.0.1", 27018);
-		std::cout << "Connected to MongoDB 127.0.0.1:27018" << std::endl;
+		fConnection = new Connection("127.0.0.1", 27017);
+		std::cout << "Connected to MongoDB 127.0.0.1:27017" << std::endl;
 	}
 	catch (ConnectionRefusedException& e)
 	{
-		std::cout << "Couldn't connect to MongoDB 127.0.0.1:27018: " << e.message() << std::endl;
+		std::cout << "Couldn't connect to MongoDB 127.0.0.1:27017: " << e.message() << std::endl;
 	}
 }
 
@@ -67,8 +67,8 @@ int BackendServer::main(const std::vector<std::string>& args)
 	// get parameters from configuration file
 	unsigned short port = (unsigned short) config().getInt("HTTPTimeServer.port", 9980);
 	std::string format(config().getString("HTTPTimeServer.format", DateTimeFormat::HTTP_FORMAT));
-	int maxQueued  = config().getInt("HTTPTimeServer.maxQueued", 100);
-	int maxThreads = config().getInt("HTTPTimeServer.maxThreads", 16);
+	int maxQueued  = config().getInt("HTTPTimeServer.maxQueued", 2000);
+	int maxThreads = config().getInt("HTTPTimeServer.maxThreads", 100);
 	ThreadPool::defaultPool().addCapacity(maxThreads);
 
 	HTTPServerParams* pParams = new HTTPServerParams;
