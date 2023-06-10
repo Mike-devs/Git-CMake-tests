@@ -49,6 +49,6 @@ REM Build our project
 rmdir %root_install_folder%\cmake-build
 mkdir %root_install_folder%\cmake-build
 pushd  %root_install_folder%\cmake-build
-cmake.exe .. -DCMAKE_PREFIX_PATH="%cmake_prefix_path%" -DCMAKE_BUILD_TYPE=%build_type%
+cmake.exe .. -DCMAKE_PREFIX_PATH="%cmake_prefix_path%" -DCMAKE_BUILD_TYPE=%build_type% -DCMAKE_CXX_FLAGS="/Zc:__cplusplus /EHsc"
 cmake.exe --build . --config %build_type%
 popd
