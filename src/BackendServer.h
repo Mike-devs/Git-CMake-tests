@@ -2,13 +2,19 @@
 
 #include "Poco/Util/ServerApplication.h"
 
+#include "mongocxx/instance.hpp"
+#include "mongocxx/client.hpp"
+
+
 namespace Poco {
 	namespace Util {
 		class OptionSet;
 	}
+	/* Mongo poco
 	namespace MongoDB {
 		class Connection;
 	}
+	Mongo poco */
 }
 
 class BackendServer: public Poco::Util::ServerApplication
@@ -34,7 +40,12 @@ public:
 	BackendServer();
 	~BackendServer();
 
+	
+	/* Mongo poco
 	Poco::SharedPtr<Poco::MongoDB::Connection> fConnection;
+	Mongo poco */
+	const mongocxx::instance fMongoInstance{};
+	mongocxx::client fConnection{mongocxx::uri{}};
 	class Stats {
 	public:
 		Stats(void)

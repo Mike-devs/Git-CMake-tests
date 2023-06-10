@@ -26,6 +26,7 @@ using ConnectionPtr = Poco::SharedPtr<Poco::MongoDB::Connection>;
 
 BackendServer::BackendServer()
 {
+	/* Mongo poco
 	try
 	{
 		fConnection = new Connection("127.0.0.1", 27017);
@@ -35,6 +36,7 @@ BackendServer::BackendServer()
 	{
 		std::cout << "Couldn't connect to MongoDB 127.0.0.1:27017: " << e.message() << std::endl;
 	}
+	Mongo poco */
 }
 
 BackendServer::~BackendServer()

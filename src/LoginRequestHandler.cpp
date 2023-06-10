@@ -56,6 +56,7 @@ void LoginRequestHandler::handleRequest(HTTPServerRequest& request, HTTPServerRe
 		Object::Ptr pObject = result.extract<Object::Ptr>();
 		std::string user_id = pObject->getValue<std::string>("user_id");
 
+		/* Mongo poco
 		QueryRequest dbRequest("altwy.users");
 		dbRequest.selector().add("user_id", user_id);
 		dbRequest.setNumberToReturn(1);
@@ -79,6 +80,7 @@ void LoginRequestHandler::handleRequest(HTTPServerRequest& request, HTTPServerRe
 			response.setStatusAndReason(Poco::Net::HTTPResponse::HTTP_NOT_FOUND);
 			response.send();
 		}
+		Mongo poco */
 	}
 
 	backend.fStats.Update(now.elapsed() / 1000);
