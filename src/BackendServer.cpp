@@ -6,7 +6,6 @@
 #include "Poco/Net/HTTPServer.h"
 #include "Poco/Net/HTTPServerParams.h"
 #include "Poco/Util/OptionSet.h"
-#include "Poco/MongoDB/Connection.h"
 #include "Poco/Net/NetException.h"
 
 #include "BackendHandlerFactory.h"
@@ -16,27 +15,12 @@ using Poco::ThreadPool;
 using Poco::Net::ServerSocket;
 using Poco::Net::HTTPServer;
 using Poco::Net::HTTPServerParams;
-using Poco::Net::ConnectionRefusedException;
 using Poco::Util::Application;
 using Poco::Util::ServerApplication;
 using Poco::Util::OptionSet;
-using Poco::MongoDB::Connection;
-
-using ConnectionPtr = Poco::SharedPtr<Poco::MongoDB::Connection>;
 
 BackendServer::BackendServer()
 {
-	/* Mongo poco
-	try
-	{
-		fConnection = new Connection("127.0.0.1", 27017);
-		std::cout << "Connected to MongoDB 127.0.0.1:27017" << std::endl;
-	}
-	catch (ConnectionRefusedException& e)
-	{
-		std::cout << "Couldn't connect to MongoDB 127.0.0.1:27017: " << e.message() << std::endl;
-	}
-	Mongo poco */
 }
 
 BackendServer::~BackendServer()
