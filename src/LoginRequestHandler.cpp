@@ -4,12 +4,13 @@
 #include "Poco/Timestamp.h"
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/Net/HTTPServerResponse.h"
-#include "Poco/Net/NetException.h"
-#include "Poco/MongoDB/Connection.h"
-#include "Poco/MongoDB/QueryRequest.h"
 #include "Poco/JSON/Parser.h"
 #include "Poco/JSON/Object.h"
 #include "Poco/Dynamic/Var.h"
+
+#include "bsoncxx/builder/basic/document.hpp"
+#include "mongocxx/client.hpp"
+#include "mongocxx/exception/query_exception.hpp"
 
 #include "BackendServer.h"
 
@@ -19,14 +20,12 @@ using Poco::Net::HTTPRequest;
 using Poco::Net::HTTPResponse;
 using Poco::Net::HTTPServerRequest;
 using Poco::Net::HTTPServerResponse;
-using Poco::Net::NetException;
-using Poco::MongoDB::Connection;
-using Poco::MongoDB::QueryRequest;
-using Poco::MongoDB::ResponseMessage;
-using Poco::MongoDB::Document;
 using Poco::JSON::Parser;
 using Poco::JSON::Object;
 using Poco::Dynamic::Var;
+
+using bsoncxx::builder::basic::kvp;
+using bsoncxx::builder::basic::make_document;
 
 LoginRequestHandler::LoginRequestHandler(void)
 {
@@ -56,31 +55,45 @@ void LoginRequestHandler::handleRequest(HTTPServerRequest& request, HTTPServerRe
 		Object::Ptr pObject = result.extract<Object::Ptr>();
 		std::string user_id = pObject->getValue<std::string>("user_id");
 
-		/* Mongo poco
-		QueryRequest dbRequest("altwy.users");
-		dbRequest.selector().add("user_id", user_id);
-		dbRequest.setNumberToReturn(1);
-
-		ResponseMessage dbResponse;
-		backend.fConnection->sendRequest(dbRequest, dbResponse);
-		if (dbResponse.documents().size() > 0)
+		bool error = false;
+		try
 		{
-			Object object;
+			auto val = backend.fConnection["altwy"]["users"].find_one(make_document(kvp("user_id", user_id)));
+			if (val)
+			{
+				Object object;
+				bsoncxx::document::view view = *val;
+				object.set("firstname", view["firstname"].get_string().value.data());
+				object.set("lastname", view["lastname"].get_string().value.data());
 
-			Document::Ptr doc = dbResponse.documents()[0];
-			object.set("lastname", doc->get<std::string>("lastname"));
-			object.set("firstname", doc->get<std::string>("firstname"));
-
-			response.setChunkedTransferEncoding(true);
-			response.setContentType("application/json");
-			object.stringify(response.send());
+				response.setChunkedTransferEncoding(true);
+				response.setContentType("application/json");
+				object.stringify(response.send());
+			}
+			else
+			{
+				response.setStatusAndReason(Poco::Net::HTTPResponse::HTTP_NOT_FOUND);
+				response.send();
+			}
 		}
-		else
+		catch(mongocxx::query_exception& e)
 		{
-			response.setStatusAndReason(Poco::Net::HTTPResponse::HTTP_NOT_FOUND);
-			response.send();
+			error = true;
+			std::cout << e.what() << std::endl;
+			response.send() << "mongocxx::query_exception: " << e.what();
 		}
-		Mongo poco */
+		catch (std::exception& e)
+		{
+			error = true;
+			std::cout << e.what() << std::endl;
+			response.send() << "std::exception: " << e.what();
+		}
+		catch (...)
+		{
+			error = true;
+			std::cout << "Unknown exception" << std::endl;
+			response.send() << "Unknown exception";
+		}
 	}
 
 	backend.fStats.Update(now.elapsed() / 1000);

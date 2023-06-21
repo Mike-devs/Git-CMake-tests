@@ -4,10 +4,6 @@
 #include "Poco/Timestamp.h"
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/Net/HTTPServerResponse.h"
-#include "Poco/Net/NetException.h"
-#include "Poco/MongoDB/Connection.h"
-#include "Poco/MongoDB/Database.h"
-#include "Poco/MongoDB/InsertRequest.h"
 #include "Poco/JSON/Parser.h"
 #include "Poco/JSON/Object.h"
 #include "Poco/Dynamic/Var.h"
@@ -26,12 +22,6 @@ using Poco::Net::HTTPRequest;
 using Poco::Net::HTTPResponse;
 using Poco::Net::HTTPServerRequest;
 using Poco::Net::HTTPServerResponse;
-using Poco::Net::NetException;
-using Poco::MongoDB::Connection;
-using Poco::MongoDB::Database;
-using Poco::MongoDB::Document;
-using Poco::MongoDB::InsertRequest;
-using Poco::MongoDB::ResponseMessage;
 using Poco::JSON::Parser;
 using Poco::JSON::Object;
 using Poco::Dynamic::Var;
@@ -40,7 +30,6 @@ using Poco::UUID;
 
 using bsoncxx::builder::basic::kvp;
 using bsoncxx::builder::basic::make_document;
-using mongocxx::bulk_write_exception;
 
 RegisterRequestHandler::RegisterRequestHandler(void)
 {
@@ -71,19 +60,7 @@ void RegisterRequestHandler::handleRequest(HTTPServerRequest& request, HTTPServe
 		Object::Ptr pObject = result.extract<Object::Ptr>();
 		std::string user_id = UUIDGenerator::defaultGenerator().create().toString();
 
-		/* Mongo poco
-		Document::Ptr user = new Document();
-		user->add("lastname", pObject->getValue<std::string>("lastname"));
-		user->add("firstname", pObject->getValue<std::string>("firstname"));
-		user->add("user_id", user_id);
-
-		Database db("altwy");
-		InsertRequest dbRequest("altwy.users");
-		dbRequest.documents().push_back(user);
-		backend.fConnection->sendRequest(dbRequest);
-		std::string err = db.getLastError(*backend.fConnection);
-		Mongo poco */
-
+		bool error = false;
 		try
 		{
 			auto db = backend.fConnection["altwy"];
@@ -91,19 +68,37 @@ void RegisterRequestHandler::handleRequest(HTTPServerRequest& request, HTTPServe
 				kvp("firstname", pObject->getValue<std::string>("firstname")),
 				kvp("lastname", pObject->getValue<std::string>("lastname")),
 				kvp("user_id", user_id)));
-			bsoncxx::types::b_oid oid = insertResult.value().inserted_id().get_oid();
-			std::cout << "inserted id: " << oid.value.to_string();
+			//bsoncxx::types::b_oid oid = insertResult.value().inserted_id().get_oid();
+			//std::cout << "inserted id: " << oid.value.to_string();
 		}
-		catch(bulk_write_exception& e)
+		catch(mongocxx::bulk_write_exception& e)
 		{
+			error = true;
 			std::cout << e.what() << std::endl;
+			response.send() << "mongocxx::bulk_write_exception: " << e.what();
 		}
-		Object object;
-		object.set("user_id", user_id);
-	
-		response.setChunkedTransferEncoding(true);
-		response.setContentType("application/json");
-		object.stringify(response.send());
+		catch (std::exception& e)
+		{
+			error = true;
+			std::cout << e.what() << std::endl;
+			response.send() << "std::exception: " << e.what();
+		}
+		catch (...)
+		{
+			error = true;
+			std::cout << "Unknown exception" << std::endl;
+			response.send() << "Unknown exception";
+		}
+
+		if(!error)
+		{
+			Object object;
+			object.set("user_id", user_id);
+
+			response.setChunkedTransferEncoding(true);
+			response.setContentType("application/json");
+			object.stringify(response.send());
+		}
 	}
 
 	backend.fStats.Update(now.elapsed() / 1000);
