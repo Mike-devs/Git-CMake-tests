@@ -10,7 +10,6 @@ find_package (mongocxx REQUIRED)
 find_package (glaze REQUIRED)
 
 add_executable(tests	src/tests.cpp
-						src/uuid.cpp src/mongo_hello.cpp
 						src/BackendServer.cpp src/BackendHandlerFactory.cpp
 						src/RegisterRequestHandler.cpp src/LoginRequestHandler.cpp src/TimeRequestHandler.cpp
 						src/LogRequestHandler.cpp src/CpuRequestHandler.cpp)
