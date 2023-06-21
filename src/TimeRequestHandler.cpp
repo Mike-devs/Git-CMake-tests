@@ -42,13 +42,13 @@ void TimeRequestHandler::handleRequest(HTTPServerRequest& request, HTTPServerRes
 	}
 	else
 	{
-		Object::Ptr object = new Object();
+		Object object;
 
 		response.setChunkedTransferEncoding(true);
 		response.setContentType("application/json");
 
-		object->set("time", DateTimeFormatter::format(now, _format));
-		object->stringify(response.send());
+		object.set("time", DateTimeFormatter::format(now, _format));
+		object.stringify(response.send());
 	}
 
 	backend.fStats.Update(now.elapsed() / 1000);
