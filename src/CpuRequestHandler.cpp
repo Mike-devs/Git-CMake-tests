@@ -9,7 +9,6 @@
 #include "Poco/Base64Encoder.h"
 #include "Poco/JSON/Parser.h"
 #include "Poco/JSON/Object.h"
-#include "Poco/JSON/Array.h"
 #include "Poco/Dynamic/Var.h"
 #include "Poco/Random.h"
 #include "glaze/glaze.hpp"
@@ -28,9 +27,37 @@ using Poco::Base64Encoder;
 using Poco::DateTimeFormatter;
 using Poco::JSON::Parser;
 using Poco::JSON::Object;
-using Poco::JSON::Array;
 using Poco::Dynamic::Var;
 using Poco::Random;
+
+struct CPUResponseBase
+{
+	std::string base64, time;
+};
+struct CPUResponseFull : public CPUResponseBase
+{
+	std::vector<float> randnums;
+};
+
+// Since the response is potentially a big JSON, we use glaze instead of Poco::JSON
+// glaze is extremely fast, but rigid since it needs a more or less 1 to 1 struct
+// with the JSON
+template <>
+struct glz::meta<CPUResponseBase> {
+	using T = CPUResponseBase;
+	static constexpr auto value = object(
+		"base64", [](auto&& self) -> auto& { return self.base64; },
+		"time", [](auto&& self) -> auto& { return self.time; }
+	);
+};
+template <>
+struct glz::meta<CPUResponseFull> {
+	static constexpr auto value = object(
+		"base64", [](auto&& self) -> auto& { return self.base64; },
+		"time", [](auto&& self) -> auto& { return self.time; },
+		"randnums", [](auto&& self) -> auto& { return self.randnums; }
+	);
+};
 
 CpuRequestHandler::CpuRequestHandler(void)
 {
@@ -47,8 +74,6 @@ void CpuRequestHandler::handleRequest(HTTPServerRequest& request, HTTPServerResp
 
 	if (request.getMethod() == HTTPRequest::HTTP_POST)
 	{
-		Timestamp now;
-
 		std::streamsize bodyLength = request.getContentLength();
 		std::string bodyString;
 		bodyString.resize(bodyLength);
@@ -65,30 +90,30 @@ void CpuRequestHandler::handleRequest(HTTPServerRequest& request, HTTPServerResp
 		encoder << bodyString;
 		encoder.close();
 
-		Object::Ptr responseJson = new Object;
-		responseJson->set("base64", encodedStr.str());
-		responseJson->set("time", DateTimeFormatter::format(now, DateTimeFormat::HTTP_FORMAT));
+		bool genRandnums = bodyJson->has("randnums");
+		bool sendRandnums = genRandnums && (bodyJson->getValue<int>("randnums") > 0);
+		CPUResponseBase* cpuResponse = genRandnums ? new CPUResponseFull : new CPUResponseBase;
+		cpuResponse->base64 = encodedStr.str();
+		cpuResponse->time = DateTimeFormatter::format(now, DateTimeFormat::HTTP_FORMAT);
 
-		std::string buffer{};
-		if(bodyJson->has("randnums"))
+		if(genRandnums)
 		{
 			Random	rng;
-			std::vector<float> randArray;
-
 			int randnums = bodyJson->getValue<int>("randnums");
-			if (randnums > 0)
-				responseJson->set("randnums", randArray);
-			else
+			CPUResponseFull* cpuResponseFull = static_cast<CPUResponseFull*>(cpuResponse);
+			if (randnums <= 0)
 				randnums = -randnums;
-			randArray.reserve(randnums);
+			cpuResponseFull->randnums.reserve(randnums);
 
 			for (int scan = 0; scan < randnums; scan++)
-			{
-				randArray.push_back(rng.nextFloat());
-				//randArray->add(rng.nextFloat());
-			}
-			glz::write_json(randArray, buffer);
+				cpuResponseFull->randnums.push_back(rng.nextFloat());
 		}
+
+		std::string buffer{};
+		if (sendRandnums)
+			glz::write_json(*static_cast<CPUResponseFull*>(cpuResponse), buffer);
+		else
+			glz::write_json(*cpuResponse, buffer);
 		response.send() << buffer;
 	}
 	else
